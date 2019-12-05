@@ -1,0 +1,75 @@
+setwd("C:/Users/Amit Kulkarni/Documents/R Programming/packages")
+library(caTools)
+library(rpart)
+library(rpart.plot)
+library(rattle)
+library(RColorBrewer)
+library(scales)
+library(data.table)
+library(formattable)
+library(ROCR)
+library(ineq)
+setwd("C:/Users/Amit Kulkarni/Documents/R Programming/Capstone Project/10. Taiwan-Customer defaults")
+CARTdata= read.csv("Taiwan-Customer defaults.csv", header=TRUE)
+CARTdata= subset(CARTdata, select=-c(1))
+set.seed(3000)
+split = sample.split(CARTdata$default, SplitRatio = 0.70)
+CARTtrain= subset(CARTdata, split==T)
+CARTtest= subset(CARTdata, split==F)
+#Running the model
+r.ctrl=rpart.control(minsplit = 100, minbucket = 10, cp=0, xval=10)
+CART_Train = rpart(formula = default~., data=CARTtrain , method="class", control = r.ctrl )
+CART_Train
+prp(CART_Train)
+fancyRpartPlot(CART_Train)
+printcp(CART_Train)
+plotcp(CART_Train)
+#Prunning
+pruning_Tree<- prune(CART_Train, cp=0.0008611, "CP" )
+printcp(pruning_Tree)
+fancyRpartPlot(pruning_Tree, uniform=TRUE, main="Pruned Classification Tree")
+CARTtrain$predict.class = predict(pruning_Tree, CARTtrain, type = "class")
+CARTtrain$predict.score = predict(pruning_Tree, CARTtrain, type = "prob")
+CARTtest$predict.class = predict(pruning_Tree, CARTtest, type = "class")
+CARTtest$predict.score = predict(pruning_Tree, CARTtest, type = "prob")
+table(CARTtrain$default,CARTtrain$predict.class )
+#accuracy 
+(1614+15640)/nrow(na.omit(CARTtrain))
+#accuracy of the true positive
+1614/(1614+3031)
+table(CARTtest$default,CARTtest$predict.class )
+#accuracy 
+(6725+698)/nrow(na.omit(CARTtest))
+#accuracy of the true positive
+698/(1293+698)
+#KS calculation
+pred<-prediction(CARTtrain$predict.score[,2], CARTtrain$default)
+perf<-performance(pred, "tpr", "fpr")
+plot(perf)
+KS<-max(attr(perf, 'y.values')[[1]] - attr(perf, 'x.values')[[1]])
+#Area Under Curve
+auc<- performance(pred, "auc");
+auc<- as.numeric(auc@y.values)
+## Gini Cooefficient
+gini=ineq(CARTtrain$predict.score[,2], type = "Gini")
+KS
+auc
+gini
+table(CARTtest$default,CARTtest$predict.class )
+#accuracy 
+(6725+698)/nrow(na.omit(CARTtest))
+#accuracy of the true positive
+698/(1293+698)
+#KS calculation
+pred<-prediction(CARTtest$predict.score[,2], CARTtest$default)
+perf<-performance(pred, "tpr", "fpr")
+plot(perf)
+KS<-max(attr(perf, 'y.values')[[1]] - attr(perf, 'x.values')[[1]])
+#Area Under Curve
+auc<- performance(pred, "auc");
+auc<- as.numeric(auc@y.values)
+## Gini Cooefficient
+gini=ineq(CARTtest$predict.score[,2], type = "Gini")
+KS
+auc
+gini

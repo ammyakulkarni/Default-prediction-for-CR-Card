@@ -1,0 +1,113 @@
+#Random Forest for Taiwan Customer default
+
+setwd("C:/Users/Amit Kulkarni/Documents/R Programming/Capstone Project/10. Taiwan-Customer defaults")
+RFdata= read.csv("Taiwan-Customer defaults.csv", header=TRUE)
+library(caTools)
+
+library(scales)
+library(data.table)
+
+RFdata= subset(RFdata, select=-c(1))
+set.seed(3000)
+split = sample.split(RFdata$default, SplitRatio = 0.70)
+RFtrain= subset(RFdata, split==T)
+RFtest= subset(RFdata, split==F)
+
+
+#Random Forest 
+
+library(randomForest)
+setwd("C:/Users/Amit Kulkarni/Documents/R Programming/Capstone Project/10. Taiwan-Customer defaults")
+RF<- randomForest(as.factor(default)~., data=RFtrain,
+                  ntree=101, mtry = 5, nodesize = 15, importance= TRUE)
+print(RF)
+plot(RF, main="")
+legend("topright", c("OOB,0,1"), text.col = 1:6, lty = 1:3, col=1:3)
+title(main="Error Rates Random Forest for RFDATA")
+
+RF$err.rate
+impvar<- round(randomForest::importance(RF),2)
+impvar[order(impvar[,3], decreasing =TRUE),]
+
+tRF<- tuneRF(x=RFtrain,
+             y=as.factor(RFtrain$default),
+             mtrystart=3,
+             ntreeTry = 100,
+             stepFactor = 1.5,
+             improve=30,
+             trace= TRUE,
+             plot=TRUE,
+             doBest = TRUE,
+             nodesize=200,
+             importance=TRUE,
+)
+
+RF<- randomForest(as.factor(default)~., data=RFtrain,
+                  ntree=50, mtry = 4, nodesize = 15, importance= TRUE)
+
+RFtrain$predict.class=predict(tRF, RFtrain, type="class")
+RFtrain$predict.score=predict(tRF, RFtrain, type="prob")
+
+#View(RFtrain)
+
+RFtest$predict.class=predict(tRF, RFtest, type="class")
+RFtest$predict.score=predict(tRF, RFtest, type="prob")
+
+
+
+pred<-prediction(RFtrain$predict.score[,2], RFtrain$default)
+perf<-performance(pred, "tpr", "fpr")
+plot(perf)
+
+KS<-max(attr(perf, 'y.values')[[1]] - attr(perf, 'x.values')[[1]])
+KS
+
+#Area Under Curve
+
+auc<- performance(pred, "auc");
+auc<- as.numeric(auc@y.values)
+auc
+
+## Gini Cooefficient
+
+library(ineq)
+gini=ineq(RFtrain$predict.score[,2], type = "Gini")
+gini
+
+
+## classification Error
+(with(RFtrain, table(default, predict.class)))
+
+KS
+auc
+gini
+#test data
+
+pred<-prediction(RFtest$predict.score[,2], RFtest$default)
+perf<-performance(pred, "tpr", "fpr")
+plot(perf)
+
+KS<-max(attr(perf, 'y.values')[[1]] - attr(perf, 'x.values')[[1]])
+KS
+
+#Area Under Curve
+
+auc<- performance(pred, "auc");
+auc<- as.numeric(auc@y.values)
+auc
+
+## Gini Cooefficient
+
+library(ineq)
+gini=ineq(RFtest$predict.score[,2], type = "Gini")
+gini
+
+
+## classification Error
+(with(RFtest, table(default, predict.class)))
+
+KS
+auc
+gini
+
+

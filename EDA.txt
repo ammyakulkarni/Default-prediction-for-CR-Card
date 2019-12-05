@@ -1,0 +1,118 @@
+#Data prepration
+#loading libraries
+setwd("C:/Users/Amit Kulkarni/Documents/R Programming/packages")
+#install.packages("UpSetR")
+#install.packages("naniar")
+library(caTools)
+library(SDMTools)
+library(caret)
+library(ROCR)
+library(corrplot)
+library(car)
+library(UpSetR)#for missing value treatment
+library(tidyverse)
+library(naniar) #for missing value treatment
+library(reshape2)
+library(scales)
+setwd("C:/Users/Amit Kulkarni/Documents/R Programming/Capstone Project/10. Taiwan-Customer defaults")
+data=read.csv("Taiwan-Customer defaults.csv")
+dim(data)
+head(data)
+nrow(data)
+str(data)
+summary(data)
+x= sum(data$default)
+x/30000*100
+attach(data)
+#checking for missing values
+sum(is.na(data))
+gg_miss_upset(data)
+n_var_miss(data)
+#checking the intersection of the missing data
+gg_miss_upset(data, nsets= n_var_miss(data))
+# to consider values other than the missing values below code to be done
+#Def.new.data<- data[!(is.na(ID))|
+                      !(is.na(LIMIT_BAL))|
+                      !(is.na(SEX))!
+                      !(is.na(EDUCATION))|
+                      !(is.na(MARRIAGE))|
+                      !(is.na(AGE))|
+                      !(is.na(Rep0905))|
+                      !(is.na(Rep0805))|
+                      !(is.na(Rep0705))|
+                      !(is.na(Rep0605))|
+                      !(is.na(Rep0505))|
+                      !(is.na(REp0405))|
+                      !(is.na(Bill0905))|
+                      !(is.na(Bill0805))|
+                      !(is.na(Bill0705))|
+                      !(is.na(Bill0605))|
+                      !(is.na(Bill0505))|
+                      !(is.na(Bill0405))|
+                      !(is.na(PAY_AMT1))|
+                      !(is.na(PAY_AMT2))|
+                      !(is.na(PAY_AMT3))|
+                      !(is.na(PAY_AMT4))|
+                      !(is.na(PAY_AMT5))|
+                      !(is.na(PAY_AMT6))|
+#                      !(is.na(default))|,]
+#Checking the data distribution for all the variables
+p.data <- data[,-c(1, 25)]
+p.data %>%
+  gather(metric, value)%>%
+  ggplot(aes(value, fill = metric))+
+  geom_density(show.legend = FALSE)+
+  facet_wrap(~metric, scales = "free")
+#Convert data to long format for plotting
+p.stack<-melt(p.data)
+p.stack
+ggplot(data=p.stack, aes(y=value))+
+  geom_boxplot(color= "dark blue", fill="red", aplha=0.3)+
+  facet_wrap(~variable, scales = "free_x", nrow = 3)+
+  coord_flip()
+
+#looking at oulier treatment
+aa<-quantile(p.data$Bill0905, probs = c(0.01, 0.99),na.rm = TRUE)
+aa
+summary(p.data$Bill0905)
+
+p.range<- NA
+for(i in 1:(ncol(p.data))){
+  Statistic <- data.frame(
+    "column" = colnames(p.data[i]),
+    "min value" = min(p.data[[i]], na.rm = TRUE),
+    "1st Percentile" = quantile(p.data[[i]],probs = c(0.01), na.rm = TRUE),
+    "max value" = max(p.data[[i]], na.rm = TRUE),
+    "99th Percentile" = quantile(p.data[[i]],probs = c(0.99), na.rm = TRUE))
+  p.range<-rbind(p.range, Statistic)
+}
+p.range <- data.table :: data.table(p.range)
+p.range
+
+#setting capping and flooring to the data at 1 and 99 percentile
+p.newdata<-p.data %>%
+  transmute_all(funs(squish(.,quantile(.,c(0.01,0.99), na.rm = TRUE))))
+summary(p.newdata)
+# rechecking the boxplot after capping and flooring
+p.stack<-melt(p.newdata)
+ggplot(data=p.stack, aes(y=value))+
+  geom_boxplot(color= "dark blue", fill="red", aplha=0.3)+
+  facet_wrap(~variable, scales = "free_x", nrow = 3)+
+  coord_flip()
+# Rechecking the distribution post the capping and flooring
+p.newdata%>%
+  gather(metric, value)%>%
+  ggplot(aes(value, fill = metric))+
+  geom_density(show.legend = FALSE)+
+  facet_wrap(~metric, scales = "free")
+# imputing missing values
+#p.newdata <- p.newdata%>%
+  mutate_if(is.numeric, zoo:: na.aggregate)
+  #p.newdata<- cbind(p.newdata, data$new_default)
+  #colnames(p.newdata)[25]<-"new_default"
+  #adding feature variable to dataset
+  #p.newdata$new_default <- ifelse(p.newdata$new_default<=0, 1, 0)
+  #re-arranging data syntax example
+  #p.newdata<- p.newdata%>% select(default, everything())
+  
+  

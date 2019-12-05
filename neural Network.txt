@@ -1,0 +1,172 @@
+## neural netwrok model for Mybank data
+#gen.matrix<- model.matrix(~default - 1, data= data.train.final)
+#data.train.final<- data.frame(data.train.final, gen.matrix)
+#View(data.train.final)
+#occ.matrix<- model.matrix(~OCCUPATION - 1, data= data.train.final)
+#data.train.final<- data.frame(data.train.final, occ.matrix)
+#age.matrix<- model.matrix(~AGE_BKT - 1, data= data.train.final)
+#data.train.final<- data.frame(data.train.final, age.matrix)
+#acc.matrix<- model.matrix(~ACC_TYPE - 1, data= data.train.final)
+#data.train.final<- data.frame(data.train.final, acc.matrix)
+
+setwd("C:/Users/Amit Kulkarni/Documents/R Programming/packages")
+library(neuralnet)
+library(ROCR)
+library(ineq)
+setwd("C:/Users/Amit Kulkarni/Documents/R Programming/Capstone Project/10. Taiwan-Customer defaults")
+NNdata=read.csv("Taiwan-Customer defaults.csv", header=TRUE)
+NNdata= subset(NNdata, select=-c(1))
+s= sample(c(1:30000), size =21000)
+data.train= NNdata[s,]
+data.test=NNdata[-s,]
+
+#Running the model
+nn1= neuralnet(formula = default~., 
+               data= data.train,
+               hidden = 2,
+               err.fct= "sse",
+               linear.output = FALSE,
+               lifesign = "full",
+               lifesign.step = 10,
+               threshold = 0.01,
+               stepmax= 2000)
+
+plot(nn1)
+
+nn2= neuralnet(formula = default~., 
+               data= data.test,
+               hidden = 2,
+               err.fct= "sse",
+               linear.output = FALSE,
+               lifesign = "full",
+               lifesign.step = 10,
+               threshold = 0.01,
+               stepmax= 2000)
+plot(nn2)
+data.train$prob<- nn1$net.result[[1]]
+quantile(data.train$prob, c(0,1,5,10,25,50,75,90,95,98,99,100)/100)
+
+data.train$class= ifelse(data.train$prob>0.25,1,0)
+with(data.train, table(default, as.factor(class)))
+
+pred<- prediction(data.train$prob, data.train$default)
+perf<-performance(pred, "tpr","fpr")
+plot(perf)
+
+KS<- max(attr(perf, 'y.value')[[1]]-attr(perf, 'x.values')[[1]])
+auc<- performance(pred,"auc")
+auc<- as.numeric(auc@y.values)
+
+gini<-ineq(data.train$prob, type="Gini")
+
+KS
+auc
+gini
+
+#test
+data.test$prob<- nn2$net.result[[1]]
+quantile(data.test$prob, c(0,1,5,10,25,50,75,90,95,98,99,100)/100)
+View(data.test)
+data.test$class= ifelse(data.test$prob>0.25,1,0)
+with(data.test, table(default, as.factor(class)))
+
+pred<- prediction(data.test$prob, data.test$default)
+perf<-performance(pred, "tpr","fpr")
+plot(perf)
+
+KS<- max(attr(perf, 'y.value')[[1]]-attr(perf, 'x.values')[[1]])
+auc<- performance(pred,"auc")
+auc<- as.numeric(auc@y.values)
+
+gini<-ineq(data.test$prob, type="Gini")
+
+KS
+auc
+gini
+
+## neural netwrok model for Mybank data
+#gen.matrix<- model.matrix(~default - 1, data= data.train.final)
+#data.train.final<- data.frame(data.train.final, gen.matrix)
+#View(data.train.final)
+#occ.matrix<- model.matrix(~OCCUPATION - 1, data= data.train.final)
+#data.train.final<- data.frame(data.train.final, occ.matrix)
+#age.matrix<- model.matrix(~AGE_BKT - 1, data= data.train.final)
+#data.train.final<- data.frame(data.train.final, age.matrix)
+#acc.matrix<- model.matrix(~ACC_TYPE - 1, data= data.train.final)
+#data.train.final<- data.frame(data.train.final, acc.matrix)
+
+setwd("C:/Users/Amit Kulkarni/Documents/R Programming/packages")
+library(neuralnet)
+library(ROCR)
+library(ineq)
+setwd("C:/Users/Amit Kulkarni/Documents/R Programming/Capstone Project/10. Taiwan-Customer defaults")
+NNdata=read.csv("Taiwan-Customer defaults.csv", header=TRUE)
+NNdata= subset(NNdata, select=-c(1))
+s= sample(c(1:30000), size =21000)
+data.train= NNdata[s,]
+data.test=NNdata[-s,]
+
+#Running the model
+nn1= neuralnet(formula = default~., 
+               data= data.train,
+               hidden = 2,
+               err.fct= "sse",
+               linear.output = FALSE,
+               lifesign = "full",
+               lifesign.step = 10,
+               threshold = 0.01,
+               stepmax= 2000)
+
+plot(nn1)
+
+nn2= neuralnet(formula = default~., 
+               data= data.test,
+               hidden = 2,
+               err.fct= "sse",
+               linear.output = FALSE,
+               lifesign = "full",
+               lifesign.step = 10,
+               threshold = 0.01,
+               stepmax= 2000)
+plot(nn2)
+data.train$prob<- nn1$net.result[[1]]
+quantile(data.train$prob, c(0,1,5,10,25,50,75,90,95,98,99,100)/100)
+
+data.train$class= ifelse(data.train$prob>0.25,1,0)
+with(data.train, table(default, as.factor(class)))
+
+pred<- prediction(data.train$prob, data.train$default)
+perf<-performance(pred, "tpr","fpr")
+plot(perf)
+
+KS<- max(attr(perf, 'y.value')[[1]]-attr(perf, 'x.values')[[1]])
+auc<- performance(pred,"auc")
+auc<- as.numeric(auc@y.values)
+
+gini<-ineq(data.train$prob, type="Gini")
+
+KS
+auc
+gini
+
+#test
+data.test$prob<- nn2$net.result[[1]]
+quantile(data.test$prob, c(0,1,5,10,25,50,75,90,95,98,99,100)/100)
+View(data.test)
+data.test$class= ifelse(data.test$prob>0.25,1,0)
+with(data.test, table(default, as.factor(class)))
+
+pred<- prediction(data.test$prob, data.test$default)
+perf<-performance(pred, "tpr","fpr")
+plot(perf)
+
+KS<- max(attr(perf, 'y.value')[[1]]-attr(perf, 'x.values')[[1]])
+auc<- performance(pred,"auc")
+auc<- as.numeric(auc@y.values)
+
+gini<-ineq(data.test$prob, type="Gini")
+
+KS
+auc
+gini
+
